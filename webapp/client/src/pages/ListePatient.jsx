@@ -42,14 +42,14 @@ function ListePatient() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const patientsPerPage = 5; 
+  const patientsPerPage = 5;
 
   useEffect(() => {
     const fetchPatients = async () => {
       try {
         const patientsData = await getPatient();
         setPatients(patientsData);
-        setAllPatients(patientsData); 
+        setAllPatients(patientsData);
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -130,7 +130,7 @@ function ListePatient() {
     setPatients(filteredPatients);
   };
 
-  
+
 
   const totalPages = Math.ceil(patients.length / patientsPerPage);
   const indexOfLastPatient = currentPage * patientsPerPage;
@@ -180,7 +180,7 @@ function ListePatient() {
               </CardHeader>
               <CardBody className="overflow-x-auto px-0 dark:bg-gray-800 text-gray-500">
                 <div className="overflow-y-auto max-h-[800px]">
-                  
+
                   <table className="mt-4 w-full min-w-max table-auto text-left">
                     <thead>
                       <tr>
@@ -312,12 +312,12 @@ function ListePatient() {
                                   </IconButton>
                                 </Tooltip>
                                 <Link to={`/patients/${patient._id}/rendezvous`}>
-  <Tooltip content="Rendez-vous" className="text-white bg-green-400 rounded-md">
-    <IconButton variant="text" className='text-green-800'>
-      <CalendarIcon className="h-4 w-4" />
-    </IconButton>
-  </Tooltip>
-</Link>
+                                  <Tooltip content="Rendez-vous" className="text-white bg-green-400 rounded-md">
+                                    <IconButton variant="text" className='text-green-800'>
+                                      <CalendarIcon className="h-4 w-4" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Link>
 
                               </div>
                             </td>

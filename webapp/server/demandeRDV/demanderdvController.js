@@ -13,14 +13,12 @@ const getAlldemandRendezVous = async (req, res) => {
 
     const medecinId = aide.medecin;
 
-    // Définir le début et la fin de la journée d'aujourd'hui
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Requête pour les demandes de rendez-vous d'aujourd'hui pour le médecin
     const demanderendezVous = await DemandeRendezVous.find({
       medecin: medecinId,
       date: {
@@ -76,7 +74,7 @@ const updateDemandeRendezVousStatus = async (req, res) => {
         time: demandeRendezVous.time,
         patient: demandeRendezVous.patient,
         medecin: demandeRendezVous.medecin,
-        secretaire: demandeRendezVous.secretaire[0] // Assuming you take the first secretaire if there are multiple
+        secretaire: demandeRendezVous.secretaire[0] 
       });
       await newRendezVous.save();
     }

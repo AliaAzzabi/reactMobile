@@ -1,10 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import Transition from '../utils/Transition';
 import io from 'socket.io-client';
+import { AuthContext } from '../context/AuthContext';
+
 
 function DropdownNotifications({ align }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { user } = useContext(AuthContext);
   const [notifications, setNotifications] = useState(() => {
     const storedNotifications = localStorage.getItem('notifications');
     return storedNotifications ? JSON.parse(storedNotifications) : [];
@@ -17,13 +20,16 @@ function DropdownNotifications({ align }) {
 
     socket.on('receiveNotification', (data) => {
       console.log('Notification reçue depuis l\'application mobile:', data);
-      setNotifications((prevNotifications) => [...prevNotifications, data]);
+      // Check if the notification's doctor matches the connected secretary's doctor
+      if (data.medecin === user.medecin._id) {
+        setNotifications((prevNotifications) => [data, ...prevNotifications]);
+      }
     });
 
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [user.medecin._id]);
 
   useEffect(() => {
     localStorage.setItem('notifications', JSON.stringify(notifications));
@@ -51,26 +57,24 @@ function DropdownNotifications({ align }) {
   return (
     <div className="relative inline-flex">
       <button
-  ref={trigger}
-  className={`relative w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600/80 rounded-full ${dropdownOpen ? 'bg-slate-200' : ''}`}
-  aria-haspopup="true"
-  onClick={() => setDropdownOpen(!dropdownOpen)}
-  aria-expanded={dropdownOpen}
->
-  <span className="sr-only">Notifications</span>
-  <svg className="w-4 h-4" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-    <path className="fill-current text-slate-500 dark:text-slate-400" d="M6.5 0C2.91 0 0 2.462 0 5.5c0 1.075.37 2.074 1 2.922V12l2.699-1.542A7.454 7.454 0 006.5 11c3.59 0 6.5-2.462 6.5-5.5S10.09 0 6.5 0z" />
-    <path className="fill-current text-slate-400 dark:text-slate-500" d="M16 9.5c0-.987-.429-1.897-1.147-2.639C14.124 10.348 10.66 13 6.5 13c-.103 0-.202-.018-.305-.021C7.231 13.617 8.556 14 10 14c.449 0 .886-.04 1.307-.11L15 16v-4h-.012C15.627 11.285 16 10.425 16 9.5z" />
-  </svg>
-  {dropdownOpen && (
-    <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-white dark:border-[#182235] rounded-full"></div>
-  )}
-  {!dropdownOpen && (
-    <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-white dark:border-[#182235] rounded-full"></div>
-  )}
-</button>
-
-
+        ref={trigger}
+        className={`relative w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600/80 rounded-full ${dropdownOpen ? 'bg-slate-200' : ''}`}
+        aria-haspopup="true"
+        onClick={() => setDropdownOpen(!dropdownOpen)}
+        aria-expanded={dropdownOpen}
+      >
+        <span className="sr-only">Notifications</span>
+        <svg className="w-4 h-4" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <path className="fill-current text-slate-500 dark:text-slate-400" d="M6.5 0C2.91 0 0 2.462 0 5.5c0 1.075.37 2.074 1 2.922V12l2.699-1.542A7.454 7.454 0 006.5 11c3.59 0 6.5-2.462 6.5-5.5S10.09 0 6.5 0z" />
+          <path className="fill-current text-slate-400 dark:text-slate-500" d="M16 9.5c0-.987-.429-1.897-1.147-2.639C14.124 10.348 10.66 13 6.5 13c-.103 0-.202-.018-.305-.021C7.231 13.617 8.556 14 10 14c.449 0 .886-.04 1.307-.11L15 16v-4h-.012C15.627 11.285 16 10.425 16 9.5z" />
+        </svg>
+        {dropdownOpen && (
+          <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-white dark:border-[#182235] rounded-full"></div>
+        )}
+        {!dropdownOpen && (
+          <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-white dark:border-[#182235] rounded-full"></div>
+        )}
+      </button>
 
       <Transition
         className={`origin-top-right z-10 absolute top-full -mr-48 sm:mr-0 min-w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-1.5 rounded shadow-lg overflow-hidden mt-1 ${align === 'right' ? 'right-0' : 'left-0'}`}
@@ -86,23 +90,30 @@ function DropdownNotifications({ align }) {
           ref={dropdown}
           onFocus={() => setDropdownOpen(true)}
           onBlur={() => setDropdownOpen(false)}
+          style={{ maxHeight: '300px' }}
+          className="py-1.5 rounded overflow-y-auto"
         >
-          <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase pt-1.5 pb-2 px-4">Notifications</div>
+          <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase pt-1.5 pb-2 px-4 ">Notifications</div>
           <ul>
-            {notifications.map((notification, index) => (
-              <li key={index} className="border-b border-slate-200 dark:border-slate-700 last:border-0">
-                <Link
-                  className="block py-2 px-4 hover:bg-slate-50 dark:hover:bg-slate-700/20"
-                  to={`/demandeRDV`}
-                  onClick={() => setDropdownOpen(false)} // Modifier pour fermer le dropdown après la redirection
-                >
-                  <span className="block text-sm mb-2">
-                    📅 <span className="font-medium text-slate-800 dark:text-slate-100">Nouveau rendez-vous :</span> {notification.cin}
-                  </span>
-                  <span className="block text-xs font-medium text-slate-400 dark:text-slate-500">{new Date(notification.date).toLocaleString()}</span>
-                </Link>
-              </li>
-            ))}
+            {notifications.slice(0, 4).map((notification, index) => {
+              if (notification.medecin !== user.medecin._id) return null; // Skip if the medecin doesn't match
+
+              return (
+                <li key={index} className="border-b border-slate-200 dark:border-slate-700 last:border-0 ">
+                  <Link
+                    className="block py-2 px-4 hover:bg-slate-50 dark:hover:bg-slate-700/20 "
+                    to={`/demandeRDV`}
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <span className="block text-sm mb-2">
+                      📅 <span className="font-medium text-slate-800 dark:text-slate-100">Nouveau rendez-vous :</span> {notification.cin !== undefined && notification.cin !== '' ? 'Patient existant' : 'Nouveau patient'}
+                    </span>
+                    <span className="block text-xs font-medium text-slate-400 dark:text-slate-500">{new Date(notification.date).toLocaleString()}</span>
+                  </Link>
+                </li>
+              );
+            })}
+
             {notifications.length === 0 && (
               <li className="py-2 px-4">Aucune notification</li>
             )}

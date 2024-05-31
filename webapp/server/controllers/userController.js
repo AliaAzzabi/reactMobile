@@ -1,6 +1,7 @@
 const User = require('../models/userModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
+const Aide = require('../aide/aideshema');
 
 const createToken = (_id) => {
   return jwt.sign({_id}, process.env.SECRET, { expiresIn: '3d' })
@@ -8,19 +9,40 @@ const createToken = (_id) => {
 
 
 const loginUser = async (req, res) => {
-  const {email, password} = req.body
+  const { email, password } = req.body;
 
   try {
-    const user = await User.login(email, password)
+    const user = await User.login(email, password);
 
-   
-    const token = createToken(user._id)
+    // Créer un token pour l'utilisateur
+    const token = createToken(user._id);
 
-    res.status(200).json({email, token, role: user.role, nomPrenom: user.nomPrenom ,telephone: user.telephone, dateNaissance:user.dateNaissance, adresse: user.adresse, user_id: user._id, image:user.image });
+    let responseData = {
+      email,
+      token,
+      role: user.role,
+      nomPrenom: user.nomPrenom,
+      telephone: user.telephone,
+      dateNaissance: user.dateNaissance,
+      adresse: user.adresse,
+      user_id: user._id,
+      image: user.image
+    };
+
+    // Si l'utilisateur a le rôle 'aide', récupérer les informations du médecin associé
+    if (user.role === 'aide') {
+      const aide = await Aide.findOne({ user: user._id }).populate('medecin');
+      if (aide && aide.medecin) {
+        responseData.medecin = aide.medecin;
+      }
+    }
+
+    res.status(200).json(responseData);
   } catch (error) {
-    res.status(400).json({error: error.message})
+    res.status(400).json({ error: error.message });
   }
-}
+};
+
 
 const signupUser = async (req, res) => {
   const { email, password, role, nomPrenom } = req.body;

@@ -5,6 +5,7 @@ const path = require("path");
 const User = require('./models/userModel');
 const Image = require('./image/imagemodel');
 const { upload } = require("./image/upload");
+
 const {createDepartement, getAllDepartements, updateDepartement, deleteDepartement,getDepartementById} = require ('./departement/controllerdepartement');
 const { getSpecialty, addSpecialty, updateSpecialty, deleteSpecialty, getSpecialtyById } = require('./specialité/controllerspecialité');
 const { getAide, addaides, updateAide, deleteAide, getAideById ,checkAideEmailExistence, GetAidesByMedecinId} = require('./aide/controlleraide');
@@ -18,7 +19,7 @@ const {sendEmail} = require ('./mail/controllerEmail');
 const {globalMedecin, globalAssistant } = require ('./statistics/statistic');
 const {sendSMS} = require ('./sms/SMScontroller');
 const requireAuth = require('./middleware/requireAuth');
-const  { getAlldemandRendezVous, deleteDemandeRendezVous } = require ('./demandeRDV/demanderdvController');
+const  { getAlldemandRendezVous, deleteDemandeRendezVous, updateDemandeRendezVousStatus } = require ('./demandeRDV/demanderdvController');
 const router = express.Router();
 
 router.use(cors());
@@ -93,7 +94,7 @@ router.get('/api/global/assistants', globalAssistant);
 
 router.get('/getAlldemandRendezVous',requireAuth, getAlldemandRendezVous);
 router.delete('/deleteDemandeRendezVous/:id', deleteDemandeRendezVous);
-
+router.put('/demande-rendezvous/:id/status',updateDemandeRendezVousStatus);
 
 router.post('/sendSMS', async (req, res) => {
     const { phoneNumber, message } = req.body;
