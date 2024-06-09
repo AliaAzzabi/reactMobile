@@ -2,7 +2,8 @@ const RendezVous = require('../rdv/rdvModel');
 const Aide = require('../aide/aideshema'); 
 const Patient = require('../patient/patientshema');
 const Medecin = require('../medecin/medecinshema');
- 
+const User = require('../models/userModel');
+
 const createRendezVous = async (req, res) => {
   try {
     const { date, time, patientNom } = req.body;
@@ -202,19 +203,20 @@ const getRendezVousByPatientId = async (req, res) => {
     const patientId = req.params.patientId;
 
     const rendezVous = await RendezVous.find({ patient: patientId })
-    .populate({
-      path: 'patient',
-      select: 'nomPrenom' 
-    })
-    .populate({
-      path: 'medecin',
-      select: 'nomPrenom',
-      populate: {
-        path: 'user',
-        select: 'nomPrenom' // Sélectionnez les champs que vous souhaitez afficher
-      }
-    })
-      .populate('secretaire');
+      .populate({
+        path: 'patient',
+        select: 'nomPrenom'
+      })
+      .populate({
+        path: 'medecin',
+        select: 'nomPrenom',
+        populate: {
+          path: 'user',
+          select: 'nomPrenom'
+        }
+      })
+      .populate('secretaire')
+      .populate('notes.addedBy', 'nomPrenom'); // Populate addedBy field in notes
 
     res.status(200).json(rendezVous);
   } catch (err) {
@@ -222,6 +224,42 @@ const getRendezVousByPatientId = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des rendez-vous du patient' });
   }
 };
+
+
+async function addNoteToRendezVous(req, res) {
+  try {
+    const { id: rendezVousId } = req.params; // Get rendezVousId from URL params
+    const { text } = req.body; // Get note text from the request body
+
+    if (!rendezVousId || !text) {
+      return res.status(400).json({ error: 'Rendez-vous ID and note text are required' });
+    }
+
+    const rendezVous = await RendezVous.findById(rendezVousId);
+
+    if (!rendezVous) {
+      return res.status(404).json({ error: 'Rendez-vous not found' });
+    }
+
+    const note = {
+      text,
+      addedBy: req.user._id, // Assuming you have a middleware that adds user information to req.user
+      addedAt: new Date()
+    };
+
+    rendezVous.notes.push(note);
+    await rendezVous.save();
+
+    res.status(201).json({ message: 'Note added successfully', note });
+  } catch (error) {
+    console.error('Error adding note:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+
+
+
 
 module.exports = {
   createRendezVous,
@@ -231,6 +269,7 @@ module.exports = {
   getRendezVousById,
   getAllRendezVousAjourdhui,
   rendezvousParJour,
-  getRendezVousByPatientId
+  getRendezVousByPatientId,
+  addNoteToRendezVous // Ensure this is exported
 };
 

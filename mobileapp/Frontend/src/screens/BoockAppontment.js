@@ -26,6 +26,9 @@ const BookAppointment = ({ navigation }) => {
     const [selectedTime, setSelectedTime] = useState(new Date());
     const [isNewPatient, setIsNewPatient] = useState(false);
     const [patientCin, setPatientCin] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [dateError, setDateError] = useState('');
+
     const [patientInfo, setPatientInfo] = useState({
         cin: '',
         nomPrenom: '',
@@ -37,26 +40,26 @@ const BookAppointment = ({ navigation }) => {
         notifier: [],
     });
 
-    const socket = io('http://192.168.1.15:8443');
+    const socket = io('http://192.168.126.171:8443');
     useEffect(() => {
-    // Écoutez l'événement 'receiveNotification'
-    socket.on('receiveNotification', (data) => {
-        console.log('Notification reçue via socket :', data);
-        // Faites quelque chose avec les données reçues...
-    });
+        // Écoutez l'événement 'receiveNotification'
+        socket.on('receiveNotification', (data) => {
+            console.log('Notification reçue via socket :', data);
+            // Faites quelque chose avec les données reçues...
+        });
 
-    // Nettoyez l'écouteur lorsque le composant est démonté
-    return () => {
-        socket.off('receiveNotification');
-    };
-}, [socket]);
+        // Nettoyez l'écouteur lorsque le composant est démonté
+        return () => {
+            socket.off('receiveNotification');
+        };
+    }, [socket]);
 
     const [secretaire, setSecretaire] = useState(null);
 
     useEffect(() => {
         const fetchSecretaire = async () => {
             try {
-                const response = await fetch(`http://192.168.1.15:5000/getAidesByMedecinId/${medecin._id}`);
+                const response = await fetch(`http://192.168.126.171:5000/getAidesByMedecinId/${medecin._id}`);
                 const aides = await response.json();
                 if (aides.length > 0) {
                     setSecretaire(aides);
@@ -70,6 +73,15 @@ const BookAppointment = ({ navigation }) => {
     }, [medecin]);
 
     const handleInputChange = (field, value) => {
+        if (field === 'email') {
+            const isValidEmail = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(value);
+            setEmailError(isValidEmail ? '' : 'Le format de l\'email est invalide.');
+        }
+        if (field === 'dateNaissance') {
+            const isValidDate = /^\d{2}\/\d{2}\/\d{4}$/.test(value);
+            setDateError(isValidDate ? '' : 'Le format de la date est invalide.');
+
+        }
         if (field === 'sms' || field === 'email' || field === 'appel') {
             setPatientInfo(prevState => ({
                 ...prevState,
@@ -86,27 +98,72 @@ const BookAppointment = ({ navigation }) => {
     const onChangeDate = (event, selectedDate) => {
         const currentDate = selectedDate || selectedDay;
         setShowDatePicker(false);
-        setSelectedDay(currentDate);
+
+        // Get today's date without time
+        const aujourdhui = new Date();
+        aujourdhui.setHours(0, 0, 0, 0);
+
+        // Check if the selected date is today
+        if (currentDate.toDateString() === aujourdhui.toDateString()) {
+            Toast.show({
+                type: 'error',
+                text1: 'La réservation pour aujourd\'hui est impossible !',
+                text2: 'Veuillez choisir une date ultérieure.',
+            });
+        }
+        // Check if the selected date is in the past
+        else if (currentDate < aujourdhui) {
+            Toast.show({
+                type: 'error',
+                text1: 'Date incorrecte',
+                text2: 'Veuillez sélectionner une date future.',
+            });
+        }
+        // Check if the selected date is a Sunday
+        else if (currentDate.getDay() === 0) { // 0 corresponds to Sunday
+            Toast.show({
+                type: 'error',
+                text1: 'Dimanche',
+                text2: 'Nous sommes fermés le dimanche.',
+            });
+        }
+        else {
+            setSelectedDay(currentDate);
+        }
     };
+
+
+
+
 
     const onChangeTime = (event, selectedDate) => {
         const currentTime = selectedDate || selectedTime;
         setShowTimePicker(false);
 
-        const minutes = currentTime.getMinutes();
-        const roundedMinutes = minutes >= 30 ? 30 : 0;
-        currentTime.setMinutes(roundedMinutes);
+        const now = new Date();
+        const selectedDateTime = new Date(selectedDay);
+        selectedDateTime.setHours(currentTime.getHours(), currentTime.getMinutes(), 0, 0);
 
         const hours = currentTime.getHours();
-        if (hours >= 8 && hours < 17) {
+
+        if (selectedDateTime < now) {
+            Toast.show({
+                type: 'error',
+                text1: 'La réservation pour aujourd\'hui est impossible !',
+                text2: 'Veuillez choisir une date ultérieure.',
+            });
+        } else if (hours >= 8 && hours < 17) {
             setSelectedTime(currentTime);
         } else {
             Toast.show({
                 type: 'error',
+                text1: 'Heure incorrecte',
                 text2: 'Veuillez sélectionner une heure entre 08:00 et 17:00.',
             });
         }
     };
+
+
 
     const handleBookAppointment = async () => {
         const requiredFields = ['cin', 'nomPrenom', 'telephone', 'emaill', 'sexe', 'dateNaissance', 'address'];
@@ -115,6 +172,14 @@ const BookAppointment = ({ navigation }) => {
             Toast.show({
                 type: 'error',
                 text2: 'Veuillez remplir tous les champs obligatoires.'
+            });
+            return;
+        }
+
+        if (!isNewPatient && !patientCin.trim()) {
+            Toast.show({
+                type: 'error',
+                text2: 'Veuillez entrer votre CIN.'
             });
             return;
         }
@@ -128,7 +193,7 @@ const BookAppointment = ({ navigation }) => {
 
         const appointmentData = {
             date: selectedDay,
-            time: selectedTime.toLocaleTimeString(),
+            time: selectedTime.toLocaleTimeString([]),
             medecin: medecin._id,
             secretaire: aidesIds,
         };
@@ -144,8 +209,8 @@ const BookAppointment = ({ navigation }) => {
         try {
             const response = await fetch(
                 isNewPatient
-                    ? 'http://192.168.1.15:5000/creerrendezvous'
-                    : 'http://192.168.1.15:5000/createRendezVousCin',
+                    ? 'http://192.168.126.171:5000/creerrendezvous'
+                    : 'http://192.168.126.171:5000/createRendezVousCin',
                 {
                     method: 'POST',
                     headers: {
@@ -164,16 +229,6 @@ const BookAppointment = ({ navigation }) => {
                     Toast.show({
                         type: 'error',
                         text1: 'Un patient avec ce CIN existe déjà.',
-                    });
-                } else if (responseData.error && responseData.error.includes('EMAIL')) {
-                    Toast.show({
-                        type: 'error',
-                        text1: 'Un patient avec cet email existe déjà.',
-                    });
-                } else if (responseData.error && responseData.error.includes('Format d\'email invalide')) {
-                    Toast.show({
-                        type: 'error',
-                        text1: 'Le format de l\'email est invalide.',
                     });
                 } else if (responseData.error && responseData.error.includes('CIN n\'existe pas')) {
                     Toast.show({
@@ -196,7 +251,7 @@ const BookAppointment = ({ navigation }) => {
         if (socket) {
             // Affichez un message dans la console pour indiquer l'envoi de la notification
             console.log('Envoi de la notification via socket :', appointmentData);
-    
+
             // Émettez l'événement 'sendNotification' avec les données de rendez-vous
             socket.emit('sendNotification', appointmentData);
         }
@@ -210,7 +265,7 @@ const BookAppointment = ({ navigation }) => {
                     onPress={() => navigation.navigate('Home')}
                     title={'Rendez-Vous 📅 '}
                 />
-                <Image source={{ uri: 'http://192.168.1.15:5000/' + medecin.user.image.filepath }}
+                <Image source={{ uri: 'http://192.168.126.171:5000/' + medecin.user.image.filepath }}
                     style={styles.docImg} />
                 <Text style={styles.name}>Dr. {medecin.user.nomPrenom}</Text>
                 <Text style={styles.spcl}>Docteur de {medecin.specialite.nom}</Text>
@@ -255,33 +310,48 @@ const BookAppointment = ({ navigation }) => {
                                 <TextInput
                                     style={styles.input}
                                     placeholder="CIN du Patient"
+                                    maxLength={8}
                                     value={patientInfo.cin}
                                     onChangeText={(text) => handleInputChange('cin', text)}
+                                    keyboardType="numeric"
+
                                 />
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Nom & Prénom"
                                     value={patientInfo.nomPrenom}
                                     onChangeText={(text) => handleInputChange('nomPrenom', text)}
+
                                 />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Téléphone"
-                                    value={patientInfo.telephone}
-                                    onChangeText={(text) => handleInputChange('telephone', text)}
-                                />
+
+
+                                <View style={styles.phoneContainer}>
+                                    <Text style={styles.prefix}>+216</Text>
+                                    <TextInput
+                                        style={styles.phoneInput}
+                                        placeholder="25 222 555"
+                                        maxLength={8}
+                                        value={patientInfo.telephone}
+                                        onChangeText={(text) => handleInputChange('telephone', text)}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Email"
                                     value={patientInfo.emaill}
                                     onChangeText={(text) => handleInputChange('emaill', text)}
                                 />
+                                {emailError ? <Text style={styles.error}>{emailError}</Text> : null}
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Date de naissance (jj/mm/aaaa)"
                                     value={patientInfo.dateNaissance}
                                     onChangeText={(text) => handleInputChange('dateNaissance', text)}
                                 />
+                                {dateError ? <Text style={styles.error}>{dateError}</Text> : null}
+
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Adresse"
@@ -334,6 +404,9 @@ const BookAppointment = ({ navigation }) => {
                                 placeholder="Entrez votre CIN"
                                 value={patientCin}
                                 onChangeText={setPatientCin}
+                                maxLength={8}
+                                keyboardType="numeric"
+
                             />
                         )}
                     </View>
@@ -370,6 +443,29 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         alignSelf: 'center',
         marginTop: 10,
+    },
+    error: {
+        color: 'red',
+        fontSize: 12,
+    },
+    phoneContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 5,
+        marginTop: 10,
+    },
+    prefix: {
+        padding: 10,
+        backgroundColor: '#eee',
+        borderRightWidth: 1,
+        borderColor: 'gray',
+    },
+    phoneInput: {
+        flex: 1,
+        height: 40,
+        paddingHorizontal: 10,
     },
     spcl: {
         fontSize: 16,

@@ -8,11 +8,18 @@ const Login = () => {
   const { user } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [localError, setLocalError] = useState(null);
   const { login, error, isLoading } = useLogin();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await login(email, password); // Passer la fonction de redirection comme troisième argument
+    setLocalError(null); // Reset local error before login attempt
+
+    const success = await login(email, password); // Assume login returns a boolean indicating success or failure
+
+    if (!success) {
+      setLocalError('Email ou mot de passe incorrect.'); // Set custom error message
+    }
   };
 
   if (user) {
@@ -56,14 +63,13 @@ const Login = () => {
             value={password}
             placeholder="Mot de passe"
           />
-          <div className="mt-4 flex justify-between font-semibold text-sm">
-            <a
-              className="text-blue-600 hover:text-blue-700 hover:underline hover:underline-offset-4"
-              href="#"
-            >
-              Mot de passe oublié?
-            </a>
-          </div>
+          
+          {localError && (
+            <div className="text-red-500 text-sm mt-2">
+              {localError}
+            </div>
+          )}
+
           <div className="text-center md:text-left">
             <button
               disabled={isLoading}
@@ -74,15 +80,7 @@ const Login = () => {
             </button>
           </div>
         </form>
-        <div className="mt-4 font-semibold text-sm text-slate-500 text-center md:text-left">
-          Vous n&apos;avez pas de compte?{" "}
-          <a
-            className="text-red-600 hover:underline hover:underline-offset-4"
-            href="#"
-          >
-            Register
-          </a>
-        </div>
+       
       </div>
     </section>
   );

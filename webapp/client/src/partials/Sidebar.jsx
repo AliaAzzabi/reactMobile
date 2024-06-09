@@ -533,7 +533,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   <div className="flex items-center">
                     <FontAwesomeIcon icon={faHistory} className={`shrink-0 h-6 w-6 ${pathname.includes('historique') ? 'text-indigo-500' : 'text-slate-600'}`} />
                     <span className="text-sm font-medium ml-3 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                      Historique
+                      Historique d'appel
                     </span>
                   </div>
                 </NavLink>
@@ -654,7 +654,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   <div className="flex items-center">
                     <FontAwesomeIcon icon={faHistory} className={`shrink-0 h-6 w-6 ${pathname.includes('historique') ? 'text-indigo-500' : 'text-slate-600'}`} />
                     <span className="text-sm font-medium ml-3 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                      Historique
+                      Historique d'appel
                     </span>
                   </div>
                 </NavLink>

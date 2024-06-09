@@ -1,14 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import Transition from '../utils/Transition';
-import { useAuthContext } from '../hooks/useAuthContext';
+import { AuthContext} from '../context/AuthContext';
 import { useLogout } from '../hooks/useLogout';
 import UserAvatar from '../images/user-avatar-32.png';
+import {  getUserProfile } from '../liaisonfrontback/operation';
 
 function DropdownProfile({ align }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { logout } = useLogout();
-  const { user } = useAuthContext();
+  const { user } = useContext(AuthContext);
   const [userImage, setUserImage] = useState(null);
 
   const handleClick = async () => {
@@ -19,24 +20,41 @@ function DropdownProfile({ align }) {
 
   const trigger = useRef(null);
   const dropdown = useRef(null);
+  
+ 
+  const [formData, setFormData] = useState({
+      nomPrenom: '',
+      email: '',
+      telephone: '',
+      adresse: '',
+      dateNaissance: '',
+      password: '',
+      confirmPassword: '',
+      role: ''
+  });
+  const [imageFile, setImageFile] = useState(null);
 
   useEffect(() => {
-    async function fetchUserImage() {
-      try {
-        const response = await fetch(`http://localhost:4000/images/${user.image}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch user image');
+        if (user) {
+            getUserData();
         }
-        const imageData = await response.json();
-        setUserImage(imageData); // Assurez-vous que imageData contient filepath
-      } catch (error) {
-        console.error('Error fetching user image:', error);
-      }
-    }
-    if (user && user.image) {
-      fetchUserImage();
-    }
-  }, [user]);
+    }, [user]);
+
+    const getUserData = async () => {
+        try {
+            const userProfile = await getUserProfile(user.token);
+            setFormData({
+                ...formData,
+                nomPrenom: userProfile.nomPrenom,
+            });
+            if (userProfile.image && userProfile.image.filepath) {
+              setUserImage(`http://localhost:4000/${userProfile.image.filepath}`);
+                        }
+        } catch (error) {
+            console.error('Erreur lors de la récupération du profil utilisateur :', error);
+        }
+    };
+    
 
   useEffect(() => {
     const clickHandler = ({ target }) => {
@@ -71,7 +89,7 @@ function DropdownProfile({ align }) {
       >
         <img
           className="w-8 h-8 rounded-full"
-          src={userImage ? `http://localhost:4000/${userImage.filepath}` : UserAvatar}
+          src={userImage || UserAvatar}
           width="32"
           height="32"
           alt="User"

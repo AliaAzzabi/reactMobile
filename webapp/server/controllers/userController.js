@@ -2,6 +2,7 @@ const User = require('../models/userModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const Aide = require('../aide/aideshema');
+const Image = require('../image/imagemodel');
 
 const createToken = (_id) => {
   return jwt.sign({_id}, process.env.SECRET, { expiresIn: '3d' })
@@ -63,49 +64,56 @@ const signupUser = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
   try {
-      // Récupérer l'ID utilisateur à partir du token d'authentification
-      const userId = req.user.id; // Assurez-vous d'avoir un middleware d'authentification pour définir req.user
-
-      // Rechercher l'utilisateur dans la base de données par son ID
-      const user = await User.findById(userId);
+      const userId = req.user._id; // Utiliser _id au lieu de id
+      const user = await User.findById(userId).populate('image'); // populate image if it's a reference
 
       if (!user) {
-          return res.status(404).json({ message: "Utilisateur non trouvé" });
+          return res.status(404).json({ message: 'Utilisateur non trouvé' });
       }
 
-      // Renvoyer les informations du profil utilisateur
-      res.status(200).json(user);
+      res.json({
+          nomPrenom: user.nomPrenom,
+          email: user.email,
+          telephone: user.telephone,
+          adresse: user.adresse,
+          role: user.role,
+          dateNaissance: user.dateNaissance,
+          image: user.image // Add the image path here
+      });
   } catch (error) {
       console.error('Erreur lors de la récupération du profil utilisateur :', error);
-      res.status(500).json({ message: "Erreur serveur lors de la récupération du profil utilisateur" });
+      res.status(500).json({ message: 'Erreur serveur lors de la récupération du profil utilisateur' });
   }
 };
 
 
+
+// userController.js
 const updateUserProfile = async (req, res) => {
   const { nomPrenom, email, telephone, adresse, dateNaissance, password } = req.body;
-  const userId = req.user._id; // Obtenez l'ID de l'utilisateur connecté à partir du middleware requireAuth
+  const userId = req.user._id;
 
   try {
       let updatedFields = { nomPrenom, email, telephone, adresse, dateNaissance };
 
-      // Si le mot de passe est fourni dans les données mises à jour
       if (password) {
-          // Générez un hash du nouveau mot de passe
           const salt = await bcrypt.genSalt(10);
           const hash = await bcrypt.hash(password, salt);
-
-          // Ajoutez le nouveau mot de passe hashé aux champs mis à jour
           updatedFields.password = hash;
       }
 
-      // Mettez à jour le profil de l'utilisateur avec les champs mis à jour
-      const updatedUser = await User.findByIdAndUpdate(userId, updatedFields, { new: true });
+      if (req.file) {
+          const newImage = new Image({
+              filename: req.file.filename,
+              filepath: req.file.path,
+          });
+          const savedImage = await newImage.save();
+          updatedFields.image = savedImage._id;
+      }
 
-      // Réponse avec les détails mis à jour de l'utilisateur
+      const updatedUser = await User.findByIdAndUpdate(userId, updatedFields, { new: true }).populate('image');
       res.status(200).json(updatedUser);
   } catch (error) {
-      // En cas d'erreur, renvoyez un message d'erreur
       res.status(400).json({ error: error.message });
   }
 };

@@ -15,6 +15,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import { sendEmail } from '../liaisonfrontback/operation';
 import { sendSMS } from '../liaisonfrontback/operation';
 import 'react-toastify/dist/ReactToastify.css';
+import Swal from 'sweetalert2';
 
 function AddRendezVousForm() {
   const { user } = useContext(AuthContext);
@@ -101,7 +102,7 @@ function AddRendezVousForm() {
           title: rendezvous.patient ? ' ' + rendezvous.patient.nomPrenom : 'Rendez-vous',
           email: rendezvous.patient ? rendezvous.patient.email : '',
           notifier: rendezvous.patient ? rendezvous.patient.notifier : '',
-          telephone:rendezvous.patient ? rendezvous.patient.telephone : '',
+          telephone: rendezvous.patient ? rendezvous.patient.telephone : '',
 
         }))
       );
@@ -120,18 +121,19 @@ function AddRendezVousForm() {
         date: selectedDate,
         time: selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-  
+
       await updateRendezVous(user.token, selectedEvent.id, updatedEventData);
       toast.success('Rendez-vous mis à jour avec succès !');
       const formattedDate = selectedDate.toDateString();
-  
+
       if (selectedEvent.notifier.includes('sms')) {
         // Envoyer un SMS au numéro de téléphone du patient
         const smsMessage = `Bonjour ${selectedEvent.title}, votre rendez-vous a été réorganisé au ${formattedDate} à ${updatedEventData.time}.`;
         const patientPhoneNumber = selectedEvent.telephone; // Récupérer le numéro de téléphone du patient
         //console.log(patientPhoneNumber);
-        await sendSMS(patientPhoneNumber, smsMessage);      }
-  
+        await sendSMS(patientPhoneNumber, smsMessage);
+      }
+
       if (selectedEvent.notifier.includes('email')) {
         // Envoyer un e-mail
         const emailSubject = 'Votre rendez-vous a été mis à jour :';
@@ -145,24 +147,24 @@ function AddRendezVousForm() {
       console.error("Erreur lors de la mise à jour du rendez-vous : " + error.message);
     }
   };
-  
+
 
   const handleCancelAppointment = async () => {
-    setIsLoading(true); // Start loading
+    setIsLoading(true);
     try {
       // Supprimer le rendez-vous
       await deleteRendezVous(user.token, selectedEvent.id);
       toast.success('Rendez-vous annulé avec succès !');
-      
+
       fetchRendezVousData();
 
-       // Envoyer un SMS si le rendez-vous était notifié par SMS
-       if (selectedEvent.notifier.includes('sms')) {
+      // Envoyer un SMS si le rendez-vous était notifié par SMS
+      if (selectedEvent.notifier.includes('sms')) {
         const smsMessage = `Bonjour ${selectedEvent.title}, votre rendez-vous a été annulé.`;
         const patientPhoneNumber = selectedEvent.telephone;
         await sendSMS(patientPhoneNumber, smsMessage);
       }
-  
+
       // Envoyer un e-mail
       if (selectedEvent.notifier.includes('email')) {
         const emailSubject = 'Annulation de votre rendez-vous :';
@@ -177,7 +179,7 @@ function AddRendezVousForm() {
       setIsLoading(false); // End loading
     }
   };
-  
+
   const handleChange = (e) => {
     setPatientNom(e.target.value);
   };
@@ -204,23 +206,23 @@ function AddRendezVousForm() {
       moment(event.start).isSame(selectedDate, 'day')
     );
     if (rdvJourSelectionne.length < maxARdvParJour) {
-     // Ajouter le nouveau rendez-vous normalement
-    try {
-      await creerRendezVous(user.token, selectedDate, patientNom);
-      toast.success('Rendez-vous ajouté avec succès !');
-      setSelectedDate(new Date());
-      setPatientNom('');
-      setEvents([...events, { start: selectedDate, end: selectedDate, title: patientNom }]);
-      setShowFormModal(false);
-      window.location.reload(); 
-    } catch (error) {
-      toast.error("Erreur lors de l'ajout du rendez-vous");
+      // Ajouter le nouveau rendez-vous normalement
+      try {
+        await creerRendezVous(user.token, selectedDate, patientNom);
+        toast.success('Rendez-vous ajouté avec succès !');
+        setSelectedDate(new Date());
+        setPatientNom('');
+        setEvents([...events, { start: selectedDate, end: selectedDate, title: patientNom }]);
+        setShowFormModal(false);
+        window.location.reload();
+      } catch (error) {
+        toast.error("Erreur lors de l'ajout du rendez-vous");
+      }
+    } else {
+      // Afficher un message d'alerte si le nombre maximal est dépassé
+      toast.error(`Le nombre maximal de rendez-vous (${maxARdvParJour}) pour cette journée est déjà atteint.`);
     }
-  } else {
-    // Afficher un message d'alerte si le nombre maximal est dépassé
-    toast.error(`Le nombre maximal de rendez-vous (${maxARdvParJour}) pour cette journée est déjà atteint.`);
-  }
-};
+  };
 
   const fetchPatients = async () => {
     try {
@@ -242,7 +244,11 @@ function AddRendezVousForm() {
     const formData = new FormData(event.target);
     const newPatient = Object.fromEntries(formData);
     newPatient.dateNaissance = dateNaissance;
-
+    const cinPattern = /^[0-9]{8}$/; // Expression régulière pour 8 chiffres
+    if (!cinPattern.test(newPatient.cin)) {
+      setErrorMessage('Veuillez saisir un numéro de CIN valide (8 chiffres).');
+      return;
+    }
     if (!newPatient.nomPrenom || !newPatient.cin || !newPatient.telephone || !newPatient.dateNaissance || !newPatient.sexe) {
       toast.error('Veuillez remplir tous les champs obligatoires.');
       return;
@@ -316,7 +322,17 @@ function AddRendezVousForm() {
                               <div className="sm:col-span-3">
                                 <label htmlFor="cin" className="block text-sm font-medium leading-6 text-gray-500 dark:text-gray-300">CIN *</label>
                                 <div className="mt-2">
-                                  <input type="text" name="cin" id="cin" autoComplete="cin" className="mb-2 dark:bg-gray-800 dark:text-gray-300 text-gray-600 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                  <input
+                                    type="text"
+                                    name="cin"
+                                    id="cin"
+                                    autoComplete="cin"
+                                    className="dark:bg-gray-800 dark:text-gray-300 text-gray-600 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                    maxLength="8" // Limite à 8 caractères
+                                    pattern="[0-9]{8}" // N'accepte que des nombres de 8 chiffres
+                                    title="Veuillez saisir un numéro de 8 chiffres" // Message d'erreur si le format n'est pas respecté
+                                    required // Rend le champ obligatoire
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -347,7 +363,7 @@ function AddRendezVousForm() {
                                   showYearDropdown
                                   scrollableYearDropdown
                                   yearDropdownItemNumber={60}
-                                  
+
                                   className="mb-2 dark:bg-gray-800 dark:text-gray-300 text-gray-600 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                 />
                               </div>
@@ -449,7 +465,7 @@ function AddRendezVousForm() {
                               dateFormat="yyyy-MM-dd HH:mm"
                               minTime={new Date().setHours(8, 0, 0)} // Heure minimale (8:00)
                               maxTime={new Date().setHours(17, 0, 0)} // Heure maximale (17:00)
-                             
+
                               className=" dark:text-gray-300 dark:bg-gray-700 w-full bg-gray-100 rounded-md border-transparent focus:border-gray-500 focus:bg-gray-50 focus:ring-0"
                             />
                           </div>
@@ -528,7 +544,7 @@ function AddRendezVousForm() {
                             onChange={handleDateChange}
                             showTimeSelect
                             timeFormat="HH:mm"
-                           
+
                             timeCaption="Heure"
                             dateFormat="yyyy-MM-dd HH:mm"
                             minTime={new Date().setHours(8, 0, 0)} // Heure minimale (8:00)

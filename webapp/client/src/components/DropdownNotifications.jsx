@@ -16,7 +16,7 @@ function DropdownNotifications({ align }) {
   const dropdown = useRef(null);
 
   useEffect(() => {
-    const socket = io('http://192.168.1.15:8443');
+    const socket = io('http://192.168.126.171:8443');
 
     socket.on('receiveNotification', (data) => {
       console.log('Notification reçue depuis l\'application mobile:', data);

@@ -16,6 +16,8 @@ import { UpdateMedecin } from '../liaisonfrontback/operation';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useLocation } from 'react-router-dom';
+import Swal from 'sweetalert2';
+
 import {
     Card,
     CardHeader,
@@ -88,20 +90,45 @@ function ListeMedecin() {
     }, [searchTerm, medecins]);
 
     const handleDeleteMedecins = (id) => {
-        const confirmDelete = window.confirm("Voulez-vous vraiment supprimer cet médecin ?");
-        if (confirmDelete) {
+        Swal.fire({
+          title: "Voulez-vous vraiment supprimer ce médecin?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "OK",
+          cancelButtonText: "Annuler"
+        }).then((result) => {
+          if (result.isConfirmed) {
             deleteMedecin(id, (res) => {
-                if (res.data) {
-                    setmedecins(medecins.filter(medecin => medecin._id !== id));
-                    toast.success("Médecin supprimé avec succès");
-                } else if (res.error) {
-                    toast.error("Cette médecin est utilisée par au moins un aide. Veuillez supprimer la référence dans la table des aide avant de la supprimer.");
-                }else {
-                    toast.error("Erreur lors de la suppression de Medecin :", res.error);
-                }
+              if (res.data) {
+                setmedecins(medecins.filter(medecin => medecin._id !== id));
+                Swal.fire({
+                  title: "Supprimé!",
+                  text: "Médecin supprimé avec succès.",
+                  icon: "success"
+                });
+                // toast.success("Médecin supprimé avec succès");
+              } else if (res.error) {
+                Swal.fire({
+                  title: "Erreur!",
+                  text: "Ce médecin est utilisé par au moins un aide. Veuillez supprimer la référence dans la table des aides avant de le supprimer.",
+                  icon: "error"
+                });
+                // toast.error("Cette médecin est utilisée par au moins un aide. Veuillez supprimer la référence dans la table des aide avant de la supprimer.");
+              } else {
+                Swal.fire({
+                  title: "Erreur!",
+                  text: "Erreur lors de la suppression de Medecin :" + res.error,
+                  icon: "error"
+                });
+                // toast.error("Erreur lors de la suppression de Medecin :", res.error);
+              }
             });
-        }
-    };
+          }
+        });
+      };
+      
 
 
     if (!user || (user.role !== "admin")) {

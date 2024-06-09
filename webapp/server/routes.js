@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const User = require('./models/userModel');
+const Aide = require('./aide/aideshema');
 const Image = require('./image/imagemodel');
 const { upload } = require("./image/upload");
 
@@ -12,7 +13,7 @@ const { getAide, addaides, updateAide, deleteAide, getAideById ,checkAideEmailEx
 const {getMedecins,  updateMedecin, deleteMedecin, getMedecinById, addmed} = require ('./medecin/controllermedecin');
 const { getAdmin, addAdmin, updateAdmin, deleteAdmin, getAdminById } = require ('./admin/controlleradmin');
 const  { getPatient, addPatient, updatePatient, deletePatient, gePatientById,StatistiquePatient , globalPatient} = require('./patient/controllerpatient');
-const {createRendezVous,getRendezVousByPatientId,rendezvousParJour,getAllRendezVousAjourdhui, getAllRendezVous, getRendezVousById, updateRendezVous, deleteRendezVous}= require("./rdv/rdvController")
+const {createRendezVous,getRendezVousByPatientId,rendezvousParJour,getAllRendezVousAjourdhui,addNoteToRendezVous, getAllRendezVous, getRendezVousById, updateRendezVous, deleteRendezVous}= require("./rdv/rdvController")
 const { enregistrerPatientSalleAttente}= require("./salleAttente/salleAttenteController")
 const {createHistorique, getAllHistoriques, deleteHistorique}=require("./historique/historiqueController")
 const {sendEmail} = require ('./mail/controllerEmail');
@@ -95,6 +96,7 @@ router.get('/api/global/assistants', globalAssistant);
 router.get('/getAlldemandRendezVous',requireAuth, getAlldemandRendezVous);
 router.delete('/deleteDemandeRendezVous/:id', deleteDemandeRendezVous);
 router.put('/demande-rendezvous/:id/status',updateDemandeRendezVousStatus);
+router.post('/rendezvous/:id/note', requireAuth, addNoteToRendezVous);
 
 router.post('/sendSMS', async (req, res) => {
     const { phoneNumber, message } = req.body;
@@ -129,5 +131,29 @@ router.get('/images/:imageId', async (req, res) => {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+
+  router.get('/getAidesByUserId/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Récupérer les aides associées à l'utilisateur et peupler les champs nécessaires
+      const aides = await Aide.find({ user: userId }).populate('user', 'nomPrenom');
+      
+      // Si aucune aide n'est trouvée, retourner une erreur
+      if (!aides.length) {
+        return res.status(404).json({ error: 'Aucune aide trouvée pour cet utilisateur' });
+      }
+      
+      // Extraire uniquement les IDs des aides
+      const aideIds = aides.map(aide => aide._id);
+      
+      // Retourner les IDs des aides
+      res.status(200).json(aideIds);
+    } catch (error) {
+      res.status(500).json({ error: 'Erreur lors de la récupération des aides' });
+    }
+  });
+  
+
   
 module.exports = { router };

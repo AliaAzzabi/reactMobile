@@ -14,6 +14,7 @@ import { getAllAide, deleteAide, updateAide } from '../liaisonfrontback/operatio
 import { getMedecins } from '../liaisonfrontback/operation';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Swal from 'sweetalert2';
 
 import {
   Card,
@@ -83,22 +84,37 @@ function ListeAssistant() {
   }, [aides]);
 
   const DeleteAide = (id) => {
-    const confirmDelete = window.confirm("Voulez-vous vraiment supprimer cet assistant ?");
-    if (confirmDelete) {
-      deleteAide(id, (res) => {
-        if (res.data) {
-          setAides(aides.filter(aide => aide._id !== id));
-          toast.success("Aide supprimé avec succès");
-        } else {
-          toast.error("Erreur lors de la suppression de l'assistant :", res.error);
-        }
-      });
-    }
+    Swal.fire({
+      title: "Voulez-vous vraiment supprimer cet assistant!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "OK",
+      cancelButtonText: "Annuler"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteAide(id, (res) => {
+          if (res.data) {
+            setAides(aides.filter(aide => aide._id !== id));
+            Swal.fire({
+              title: "Supprimé!",
+              text: "Aide supprimé avec succès.",
+              icon: "success"
+            });
+           // toast.success("Aide supprimé avec succès");
+          } else {
+            toast.error("Erreur lors de la suppression de l'assistant :", res.error);
+          }
+        });
+      }
+    });
   };
   
 
+  
+
   if (!user || (user.role !== "admin")) {
-    // Rediriger l'utilisateur vers la page de connexion ou afficher un message d'erreur
     return <Navigate to="/login" />;
   }
 

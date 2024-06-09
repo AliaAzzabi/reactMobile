@@ -1,51 +1,60 @@
 const Historique = require('../historique/historiqueModel');
 const Patient = require('../patient/patientshema');
+const Aide = require('../aide/aideshema');
 
-// Créer un nouvel historique
+
 const createHistorique = async (req, res) => {
     try {
-        const { nomPrenom, description } = req.body;
-        
-        // Rechercher le patient par nom et prénom
-        const patient = await Patient.findOne({ nomPrenom });
-        if (!patient) {
-            return res.status(404).json({ error: 'Patient non trouvé' });
-        }
-        
-        // Créer l'historique avec l'ID du patient
-        const historique = new Historique({ patient: patient._id, description });
-        const savedHistorique = await historique.save();
-        
-        res.status(201).json(savedHistorique);
+      const { patientId, aideId, description } = req.body;
+      
+      const patient = await Patient.findById(patientId);
+      if (!patient) {
+        return res.status(404).json({ error: 'Patient non trouvé' });
+      }
+
+      const aide = aideId;
+  
+      const historique = new Historique({ 
+        patient: patient._id, 
+        aide: aide, 
+        description 
+      });
+      const savedHistorique = await historique.save();
+      
+      res.status(201).json(savedHistorique);
     } catch (error) {
-        res.status(500).json({ error: 'Erreur lors de la création de l\'historique' });
+      res.status(500).json({ error: 'Erreur lors de la création de l\'historique' });
     }
-};
+  };
+  
+  
+  
+
 const getAllHistoriques = async (req, res) => {
     try {
-        const historiques = await Historique.find().populate('patient');
+        const historiques = await Historique.find()
+            .populate('patient')
+            .populate({
+                path: 'aide',
+                populate: { path: 'user', select: 'nomPrenom' } 
+            });
         res.status(200).json(historiques);
     } catch (error) {
         res.status(500).json({ error: 'Erreur lors de la récupération des historiques' });
     }
 };
 
-// Supprimer un historique
+
 const deleteHistorique = async (req, res) => {
     try {
-        const historique = await Historique.findById(req.params.id);
-        if (!historique) {
-            return res.status(404).json({ error: 'Historique non trouvé' });
-        }
-        await historique.remove();
-        res.status(204).send();
-    } catch (error) {
-        res.status(500).json({ error: 'Erreur lors de la suppression de l\'historique' });
+        const deletedHistorique = await Historique.findByIdAndDelete(req.params.id);
+        res.status(200).send({ message: 'Aide supprimé avec succès', data: deletedHistorique });
+    } catch (err) {
+        res.status(400).send({ error: `Erreur lors de la suppression du Aide : ${err.message}` });
     }
 };
-
 module.exports = {
     createHistorique,
     getAllHistoriques,
     deleteHistorique
-  };
+};

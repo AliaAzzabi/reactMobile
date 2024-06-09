@@ -13,22 +13,19 @@ const getAlldemandRendezVous = async (req, res) => {
 
     const medecinId = aide.medecin;
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    // Obtenir la date et l'heure actuelles
+    const now = new Date();
 
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
-
+    // Requête pour les demandes de rendez-vous à partir de maintenant pour le médecin
     const demanderendezVous = await DemandeRendezVous.find({
       medecin: medecinId,
       date: {
-        $gte: startOfDay,
-        $lte: endOfDay
+        $gte: now // Utiliser la date et l'heure actuelles comme critère
       }
     })
       .populate({
         path: 'patient',
-        select: 'nomPrenom email telephone'
+        select: 'cin nomPrenom email telephone'
       })
       .populate('medecin')
       .populate('secretaire');
@@ -39,7 +36,6 @@ const getAlldemandRendezVous = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des demandes de rendez-vous' });
   }
 };
-
 const deleteDemandeRendezVous = async (req, res) => {
   try {
     const { id } = req.params;

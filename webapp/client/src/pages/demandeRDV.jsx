@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import {Link, Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import Sidebar from '../partials/Sidebar';
@@ -22,11 +22,13 @@ function DemandeRDV() {
       setEvents(
         data.map((rendezvous) => ({
           id: rendezvous._id,
+          cin: rendezvous.patient ? rendezvous.patient.cin : 'N/A',
           nomPrenom: rendezvous.patient ? rendezvous.patient.nomPrenom : 'N/A',
           email: rendezvous.patient ? rendezvous.patient.email : 'N/A',
           telephone: rendezvous.patient ? rendezvous.patient.telephone : 'N/A',
           medecin: rendezvous.medecin ? rendezvous.medecin.nomPrenom : 'N/A',
-          date: new Date(rendezvous.date).toLocaleString(),
+          date: new Date(rendezvous.date).toLocaleDateString(),
+          heure: new Date(rendezvous.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           status: rendezvous.status // Include status
         }))
       );
@@ -41,9 +43,9 @@ function DemandeRDV() {
 
   const handleStatusUpdate = async (id, status) => {
     try {
-      console.log(`Updating status for ${id} to ${status}`); 
+      console.log(`Updating status for ${id} to ${status}`);
       await axios.put(
-        `http://localhost:4000/demande-rendezvous/${id}/status`, 
+        `http://localhost:4000/demande-rendezvous/${id}/status`,
         { status },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
@@ -68,34 +70,38 @@ function DemandeRDV() {
               <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                   <tr>
+                    <th scope="col" className="px-6 py-3">CIN</th>
                     <th scope="col" className="px-6 py-3">Nom Prénom</th>
                     <th scope="col" className="px-6 py-3">Email</th>
-                    <th scope="col" className="px-6 py-3">CIN</th>
-                    <th scope="col" className="px-6 py-3">Date et heure du rendez-vous</th>
+                    <th scope="col" className="px-6 py-3">Téléphone</th>
+                    <th scope="col" className="px-6 py-3">Date</th>
+                    <th scope="col" className="px-6 py-3">Heure</th>
+
                     <th scope="col" className="px-6 py-3">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {events.map((event) => (
                     <tr key={event.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap">{event.cin}  <br/><div className='text-gray-400'>Ajouter le: {event.heure}</div></td>
                       <td className="px-6 py-4 whitespace-nowrap">{event.nomPrenom}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{event.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{event.telephone}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{event.date}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">{event.heure}</td>    <td className="px-6 py-4 whitespace-nowrap">
                         {event.status === 'Accepté' ? (
                           <span className='bg-green-200 p-2'>Demande acceptée</span>
                         ) : event.status === 'Refusé' ? (
                           <span className='bg-red-200 p-2'>Demande refusée</span>
                         ) : (
                           <>
-                            <button 
+                            <button
                               onClick={() => handleStatusUpdate(event.id, 'Accepté')}
                               className="px-3 py-1 bg-green-400 text-white hover:bg-green-600 mr-2"
                             >
                               Accepter
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleStatusUpdate(event.id, 'Refusé')}
                               className="px-3 py-1 bg-red-500 text-white hover:bg-red-600"
                             >

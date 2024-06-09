@@ -8,8 +8,6 @@ const MedecinSchema = mongoose.Schema({
     ref: "User"
   },
  
-
-
   specialite: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Specialtie"

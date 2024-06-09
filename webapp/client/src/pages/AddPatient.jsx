@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { AuthContext } from '../context/AuthContext';
 import Sidebar from '../partials/Sidebar';
 import Header from '../partials/Header';
@@ -8,6 +8,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 import DashboardAvatars from '../partials/dashboard/DashboardAvatars';
 import FilterButton from '../components/DropdownFilter';
 import Datepicker from '../components/Datepicker';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { Link } from 'react-router-dom';
 import {
     Card,
@@ -31,6 +33,8 @@ import { addPatient } from '../liaisonfrontback/operation';
 
 function AddPatient() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const Navigation = useNavigate();
+
     const { user } = useContext(AuthContext);
     const [dateNaissance, setDateNaissance] = useState(new Date());
     const [errorMessage, setErrorMessage] = useState('');
@@ -41,7 +45,12 @@ function AddPatient() {
         const formData = new FormData(event.target);
         const newPatient = Object.fromEntries(formData);
         newPatient.dateNaissance = dateNaissance;
-
+        
+        const cinPattern = /^[0-9]{8}$/; // Expression régulière pour 8 chiffres
+        if (!cinPattern.test(newPatient.cin)) {
+            setErrorMessage('Veuillez saisir un numéro de CIN valide (8 chiffres).');
+            return;
+        }
         // Vérification des champs obligatoires
         if (!newPatient.nomPrenom || !newPatient.cin || !newPatient.telephone || !newPatient.dateNaissance || !newPatient.sexe) {
             setErrorMessage('Veuillez remplir tous les champs obligatoires.');
@@ -53,6 +62,8 @@ function AddPatient() {
 
         try {
             addPatient({ ...newPatient, notifier: notifications }, (response) => {
+
+
                 console.log(response);
                 if (response.error) {
                     setErrorMessage(response.error);
@@ -60,6 +71,8 @@ function AddPatient() {
                 } else {
                     setSuccessMessage('Patient ajouté avec succès.');
                     setErrorMessage('');
+                    Navigation('/listePatient');
+                    localStorage.setItem('successMessage', 'Patient ajouté avec succès');
                 }
             });
         } catch (error) {
@@ -100,7 +113,17 @@ function AddPatient() {
                                                 <div className="sm:col-span-3">
                                                     <label htmlFor="cin" className="block text-sm font-medium leading-6 text-gray-500 dark:text-gray-400">CIN *</label>
                                                     <div className="mt-2">
-                                                        <input type="text" name="cin" id="cin" autoComplete="cin" className="dark:bg-gray-800 dark:text-gray-300 text-gray-600 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                                        <input
+                                                            type="text"
+                                                            name="cin"
+                                                            id="cin"
+                                                            autoComplete="cin"
+                                                            className="dark:bg-gray-800 dark:text-gray-300 text-gray-600 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                                            maxLength="8" // Limite à 8 caractères
+                                                            pattern="[0-9]{8}" // N'accepte que des nombres de 8 chiffres
+                                                            title="Veuillez saisir un numéro de 8 chiffres" // Message d'erreur si le format n'est pas respecté
+                                                            required // Rend le champ obligatoire
+                                                        />
                                                     </div>
                                                 </div>
                                                 <div className="sm:col-span-3">
@@ -111,11 +134,16 @@ function AddPatient() {
                                                 </div>
                                                 <div className=" sm:col-span-3">
                                                     <label htmlFor="telephone" className="block text-sm font-medium leading-6 text-gray-500 dark:text-gray-400">Numéro de téléphone *</label>
-                                                    <div className="mt-2">
-                                                        <input type="tel" placeholder=" +216 25 222 555" maxLength="8" name="telephone" id="telephone" autoComplete="telephone" className=" dark:bg-gray-800 text-gray-900 block w-full rounded-md border-0 py-1.5 dark:text-gray-300 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                                    <div className="mt-2 flex">
+                                                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm">
+                                                            +216
+                                                        </span>
+
+                                                        <input type="tel" placeholder=" 25 222 555" maxLength="8" name="telephone" id="telephone" autoComplete="telephone" className=" dark:bg-gray-800 text-gray-900 block w-full rounded-md border-0 py-1.5 dark:text-gray-300 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
                                                     </div>
                                                 </div>
-                                                <div className="sm:col-span-2">
+
+                                                <div className="sm:col-span-3">
                                                     <label htmlFor="dateNaissance" className="block text-sm font-medium leading-6 text-gray-500 dark:text-gray-400">Date de naissance *</label>
                                                     <div className="mt-2">
                                                         <DatePicker
@@ -194,6 +222,8 @@ function AddPatient() {
                     </div>
                 </main>
             </div>
+            <ToastContainer />
+
         </div>
     );
 }

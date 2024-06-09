@@ -48,7 +48,7 @@ const getAideById = async (req, res) => {
     try {
         const aide = await Aide.findById(req.params.id)
             .populate('user')
-            .populate('image')
+          
             .populate('medecin');
 
         if (!aide) {

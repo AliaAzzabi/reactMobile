@@ -18,7 +18,7 @@ io.on('connection', (socket) => {
     io.emit('receiveNotification', data); 
   });
 });
-
+app.use('/uploads', express.static('public/uploads'));
 // middleware
 app.use(express.json())
 app.use("/", router);

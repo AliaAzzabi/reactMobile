@@ -142,7 +142,14 @@ export const deleteAide = (id, callback) => {
     .catch((err) => callback(err));
 }
 
-
+export const getAidesByUserId = (id) => {
+  return api.get(`/getAidesByUserId/${id}`)
+    .then((response) => response.data)
+    .catch((err) => {
+      console.error('Error fetching aides by user ID:', err);
+      throw err;
+    });
+};
 export const getMedecins = (callback) => {
   api.get('/getMedecins')
     .then((res) => callback(res))
@@ -371,14 +378,14 @@ export const getAllHistoriques = async (id) => {
 
 export const createHistorique = (patient, callback) => {
   api.post('/creerhistorique', patient)
-      .then((res) => {
-          console.log('Received response:', res);
-          callback(res.data); 
-      })
-      .catch((err) => {
-          console.error('Error:', err.response.data);
-          callback(err.response.data); 
-      });
+    .then((res) => {
+      console.log('Received response:', res);
+      callback(null, res); 
+    })
+    .catch((err) => {
+      console.error('Error:', err);
+      callback(err.response || err); 
+    });
 };
 
 export const deleteHistorique = (id, callback) => {
@@ -397,42 +404,36 @@ export const getRendezVousByPatientId = async (patientId) => {
   }
 };
 
-export const updateUserProfile = async (userData, token) => {
-  try {
-    const response = await axios.put('http://localhost:4000/api/user/profile', userData, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
 
-
-
-// Cette fonction envoie une requête au serveur pour récupérer les informations du profil utilisateur
 export const getUserProfile = async (token) => {
   try {
-      const response = await fetch('http://localhost:4000/api/user/getprofile', {
-          method: 'GET',
+      const response = await axios.get('http://localhost:4000/api/user/getprofile', {
           headers: {
-              'Authorization': `Bearer ${token}`
+              Authorization: `Bearer ${token}`
           }
       });
-
-      if (!response.ok) {
-          throw new Error('Impossible de récupérer le profil utilisateur');
-      }
-
-      const userProfile = await response.json();
-      return userProfile;
+      return response.data;
   } catch (error) {
-      throw new Error('Erreur lors de la récupération du profil utilisateur : ' + error.message);
+      console.error('Erreur lors de la récupération du profil utilisateur:', error);
+      throw error;
   }
 };
+
+export const updateUserProfile = async (formData, token) => {
+  try {
+      const response = await axios.put('http://localhost:4000/api/user/profile', formData, {
+          headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+          }
+      });
+      return response.data;
+  } catch (error) {
+      console.error('Erreur lors de la mise à jour du profil utilisateur:', error);
+      throw error;
+  }
+};
+
 
 export const getAllDemandeRendezVous = async (userToken) => {
   try {

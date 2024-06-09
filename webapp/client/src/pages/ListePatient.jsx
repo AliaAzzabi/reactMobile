@@ -9,6 +9,10 @@ import { PencilIcon, CalendarIcon, TrashIcon } from '@heroicons/react/outline';
 import { getPatient, deletePatient, updatePatient } from '../liaisonfrontback/operation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Swal from 'sweetalert2';
+
 import {
   Card,
   CardHeader,
@@ -57,25 +61,49 @@ function ListePatient() {
 
     fetchPatients();
   }, []);
-
+  useEffect(() => {
+    const successMessage = localStorage.getItem('successMessage');
+    if (successMessage) {
+        toast.success(successMessage); 
+        localStorage.removeItem('successMessage'); 
+    }
+}, []);
 
   if (!user || (user.role !== "médecin" && user.role !== "aide")) {
     return <Navigate to="/login" />;
   }
 
   const handleDeletePatient = (id) => {
-    const confirmDelete = window.confirm("Voulez-vous vraiment supprimer ce patient ?");
-    if (confirmDelete) {
-      deletePatient(id, (res) => {
-        if (res.data) {
-          setPatients(patients.filter(patient => patient._id !== id));
-          console.log("patient supprimé avec succès");
-        } else {
-          console.error("Erreur lors de la suppression du patient :", res.error);
-        }
-      });
-    }
+    Swal.fire({
+      title: "Voulez-vous vraiment supprimer ce patient?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "OK",
+      cancelButtonText: "Annuler"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deletePatient(id, (res) => {
+          if (res.data) {
+            setPatients(patients.filter(patient => patient._id !== id));
+            Swal.fire({
+              title: "Supprimé!",
+              text: "Patient supprimé avec succès.",
+              icon: "success"
+            });
+          } else {
+            Swal.fire({
+              title: "Erreur!",
+              text: "Erreur lors de la suppression du patient :" + res.error,
+              icon: "error"
+            });
+          }
+        });
+      }
+    });
   };
+  
 
   const openModal = (patient) => {
     setSelectedPatient(patient);
@@ -464,6 +492,8 @@ function ListePatient() {
           )}
         </main>
       </div>
+      <ToastContainer />
+
     </div>
   );
 }

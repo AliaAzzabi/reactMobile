@@ -10,6 +10,7 @@ import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import { deleteAide, updateAide, getMedecins, getAllAide } from '../liaisonfrontback/operation';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Swal from 'sweetalert2';
 
 import {
     Card,
@@ -82,19 +83,38 @@ function ListeAideParMed() {
     }, []);
 
     const DeleteAide = (id) => {
-        const confirmDelete = window.confirm("Voulez-vous vraiment supprimer cet assistant ?");
-        if (confirmDelete) {
+        Swal.fire({
+          title: "Voulez-vous vraiment supprimer cet assistant?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "OK",
+          cancelButtonText: "Annuler"
+        }).then((result) => {
+          if (result.isConfirmed) {
             deleteAide(id, (res) => {
-                if (res.data) {
-                    setAides(aides.filter(aide => aide._id !== id));
-                    toast.success("Aide supprimé avec succès");
-                } else {
-                    toast.error("Erreur lors de la suppression de l'assistant :", res.error);
-                }
+              if (res.data) {
+                setAides(aides.filter(aide => aide._id !== id));
+                Swal.fire({
+                    title: "Supprimé!",
+                    text: "Aide supprimé avec succès.",
+                    icon: "success"
+                  });
+                //toast.success("Aide supprimé avec succès");
+              } else {
+                Swal.fire({
+                    title: "Erreur!",
+                    text: "Erreur lors de la suppression de l'assistant :" + res.error,
+                    icon: "error"
+                  });
+                //toast.error("Erreur lors de la suppression de l'assistant :", res.error);
+              }
             });
-        }
-    };
-
+          }
+        });
+      };
+      
     const openModal = (aide) => {
         setSelectedAide(aide);
         setIsModalOpen(true);
