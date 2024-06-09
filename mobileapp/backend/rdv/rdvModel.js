@@ -29,7 +29,7 @@ const rendezVousSchema = new mongoose.Schema({
     ref: 'Aide',
     required: true
   }],
-});
+}, { timestamps: true });
 
 const DemandeRendezVous = mongoose.model('DemandeRendezVous', rendezVousSchema);
 

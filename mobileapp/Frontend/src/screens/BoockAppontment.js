@@ -40,7 +40,7 @@ const BookAppointment = ({ navigation }) => {
         notifier: [],
     });
 
-    const socket = io('http://192.168.126.171:8443');
+    const socket = io('http://192.168.1.14:8443');
     useEffect(() => {
         // Écoutez l'événement 'receiveNotification'
         socket.on('receiveNotification', (data) => {
@@ -59,7 +59,7 @@ const BookAppointment = ({ navigation }) => {
     useEffect(() => {
         const fetchSecretaire = async () => {
             try {
-                const response = await fetch(`http://192.168.126.171:5000/getAidesByMedecinId/${medecin._id}`);
+                const response = await fetch(`http://192.168.1.14:5000/getAidesByMedecinId/${medecin._id}`);
                 const aides = await response.json();
                 if (aides.length > 0) {
                     setSecretaire(aides);
@@ -192,8 +192,8 @@ const BookAppointment = ({ navigation }) => {
         const aidesIds = secretaire.map(sec => sec._id);
 
         const appointmentData = {
-            date: selectedDay,
-            time: selectedTime.toLocaleTimeString([]),
+            date: selectedDay.toISOString(), 
+            time: selectedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
             medecin: medecin._id,
             secretaire: aidesIds,
         };
@@ -209,8 +209,8 @@ const BookAppointment = ({ navigation }) => {
         try {
             const response = await fetch(
                 isNewPatient
-                    ? 'http://192.168.126.171:5000/creerrendezvous'
-                    : 'http://192.168.126.171:5000/createRendezVousCin',
+                    ? 'http://192.168.1.14:5000/creerrendezvous'
+                    : 'http://192.168.1.14:5000/createRendezVousCin',
                 {
                     method: 'POST',
                     headers: {
@@ -249,11 +249,13 @@ const BookAppointment = ({ navigation }) => {
             });
         }
         if (socket) {
-            // Affichez un message dans la console pour indiquer l'envoi de la notification
-            console.log('Envoi de la notification via socket :', appointmentData);
+            const notificationData = {
+                ...appointmentData,
+                notificationDate: new Date().toISOString(), // Ajoutez la date et l'heure de la notification
+            };
 
-            // Émettez l'événement 'sendNotification' avec les données de rendez-vous
-            socket.emit('sendNotification', appointmentData);
+            console.log('Envoi de la notification via socket :', notificationData);
+            socket.emit('sendNotification', notificationData);
         }
     };
 
@@ -265,7 +267,7 @@ const BookAppointment = ({ navigation }) => {
                     onPress={() => navigation.navigate('Home')}
                     title={'Rendez-Vous 📅 '}
                 />
-                <Image source={{ uri: 'http://192.168.126.171:5000/' + medecin.user.image.filepath }}
+                <Image source={{ uri: 'http://192.168.1.14:5000/' + medecin.user.image.filepath }}
                     style={styles.docImg} />
                 <Text style={styles.name}>Dr. {medecin.user.nomPrenom}</Text>
                 <Text style={styles.spcl}>Docteur de {medecin.specialite.nom}</Text>

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Transition from '../utils/Transition';
 import io from 'socket.io-client';
 import { AuthContext } from '../context/AuthContext';
-
+import moment from 'moment-timezone';
 
 function DropdownNotifications({ align }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -16,11 +16,10 @@ function DropdownNotifications({ align }) {
   const dropdown = useRef(null);
 
   useEffect(() => {
-    const socket = io('http://192.168.126.171:8443');
+    const socket = io('http://192.168.1.14:8443');
 
     socket.on('receiveNotification', (data) => {
       console.log('Notification reçue depuis l\'application mobile:', data);
-      // Check if the notification's doctor matches the connected secretary's doctor
       if (data.medecin === user.medecin._id) {
         setNotifications((prevNotifications) => [data, ...prevNotifications]);
       }
@@ -93,27 +92,28 @@ function DropdownNotifications({ align }) {
           style={{ maxHeight: '300px' }}
           className="py-1.5 rounded overflow-y-auto"
         >
-          <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase pt-1.5 pb-2 px-4 ">Notifications</div>
+          <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase pt-1.5 pb-2 px-4">Notifications</div>
           <ul>
             {notifications.slice(0, 4).map((notification, index) => {
-              if (notification.medecin !== user.medecin._id) return null; // Skip if the medecin doesn't match
+              if (notification.medecin !== user.medecin._id) return null;
 
               return (
-                <li key={index} className="border-b border-slate-200 dark:border-slate-700 last:border-0 ">
+                <li key={index} className="border-b border-slate-200 dark:border-slate-700 last:border-0">
                   <Link
-                    className="block py-2 px-4 hover:bg-slate-50 dark:hover:bg-slate-700/20 "
+                    className="block py-2 px-4 hover:bg-slate-50 dark:hover:bg-slate-700/20"
                     to={`/demandeRDV`}
                     onClick={() => setDropdownOpen(false)}
                   >
                     <span className="block text-sm mb-2">
                       📅 <span className="font-medium text-slate-800 dark:text-slate-100">Nouveau rendez-vous :</span> {notification.cin !== undefined && notification.cin !== '' ? 'Patient existant' : 'Nouveau patient'}
                     </span>
-                    <span className="block text-xs font-medium text-slate-400 dark:text-slate-500">{new Date(notification.date).toLocaleString()}</span>
+                    <span className="block text-xs font-medium text-slate-400 dark:text-slate-500">
+                      {moment(notification.notificationDate).tz('Africa/Tunis').format('DD/MM/YYYY HH:mm')}
+                    </span>
                   </Link>
                 </li>
               );
             })}
-
             {notifications.length === 0 && (
               <li className="py-2 px-4">Aucune notification</li>
             )}

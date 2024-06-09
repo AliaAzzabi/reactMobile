@@ -15,7 +15,7 @@ const Pending = ({ navigation }) => {
     }
 
     try {
-      const response = await axios.get(`http://192.168.126.171:5000/rdvByCIN`, {
+      const response = await axios.get(`http://192.168.1.14:5000/rdvByCIN`, {
         params: { cin: cin }
       });
       if (response.status === 200 && response.data.length > 0) {

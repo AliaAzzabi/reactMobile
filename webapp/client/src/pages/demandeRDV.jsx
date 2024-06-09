@@ -6,6 +6,7 @@ import Sidebar from '../partials/Sidebar';
 import Header from '../partials/Header';
 import WelcomeBanner from '../partials/dashboard/WelcomeBanner';
 import { getAllDemandeRendezVous } from '../liaisonfrontback/operation';
+import moment from 'moment-timezone';
 
 function DemandeRDV() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,9 +28,10 @@ function DemandeRDV() {
           email: rendezvous.patient ? rendezvous.patient.email : 'N/A',
           telephone: rendezvous.patient ? rendezvous.patient.telephone : 'N/A',
           medecin: rendezvous.medecin ? rendezvous.medecin.nomPrenom : 'N/A',
-          date: new Date(rendezvous.date).toLocaleDateString(),
-          heure: new Date(rendezvous.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          status: rendezvous.status // Include status
+          date: moment(rendezvous.date).tz('Africa/Tunis').format('DD/MM/YYYY'),
+          heure: moment(rendezvous.time, 'HH:mm').tz('Africa/Tunis').format('HH:mm'), // Adjusted to use rendezvous.time
+          status: rendezvous.status,
+          createdAt: rendezvous.createdAt
         }))
       );
     } catch (error) {
@@ -76,19 +78,25 @@ function DemandeRDV() {
                     <th scope="col" className="px-6 py-3">Téléphone</th>
                     <th scope="col" className="px-6 py-3">Date</th>
                     <th scope="col" className="px-6 py-3">Heure</th>
-
                     <th scope="col" className="px-6 py-3">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {events.map((event) => (
                     <tr key={event.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                      <td className="px-6 py-4 whitespace-nowrap">{event.cin}  <br/><div className='text-gray-400'>Ajouter le: {event.heure}</div></td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {event.cin}  
+                        <br/>
+                        <div className='text-gray-400'>
+                          Ajouter le: {moment(event.createdAt).tz('Africa/Tunis').format('HH:mm')}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">{event.nomPrenom}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{event.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{event.telephone}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{event.date}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{event.heure}</td>    <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">{event.heure}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         {event.status === 'Accepté' ? (
                           <span className='bg-green-200 p-2'>Demande acceptée</span>
                         ) : event.status === 'Refusé' ? (

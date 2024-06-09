@@ -12,14 +12,14 @@ const Home = ({ navigation }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        fetch('http://192.168.126.171:5000/getAllspecialities')
+        fetch('http://192.168.1.14:5000/getAllspecialities')
             .then(response => response.json())
             .then(data => setSpecialties(data))
             .catch(error => console.error('Error fetching specialties:', error));
     }, []);
 
     useEffect(() => {
-        fetch('http://192.168.126.171:5000/getMedecins')
+        fetch('http://192.168.1.14:5000/getMedecins')
             .then(response => response.json())
             .then(data => setMedecins(data))
             .catch(error => console.error('Error fetching medecins:', error));
@@ -95,7 +95,7 @@ const Home = ({ navigation }) => {
                                         <View style={styles.docItem}>
                                           
                                              <Image
-                                                source={{ uri: 'http://192.168.126.171:5000/' + item.user.image.filepath }}
+                                                source={{ uri: 'http://192.168.1.14:5000/' + item.user.image.filepath }}
                                                 style={styles.docImg}
                                             />
                                             <Text style={styles.docName}>Dr. {item.user.nomPrenom}</Text>
